@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZ COASTAL - ADMIN</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Poppins;background:#FFFBF8;padding:20px}
+.card{background:#fff;border:1px solid #F0E6E0;border-radius:16px;padding:20px;max-width:500px;margin:20px auto}
+input,select{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:10px;box-sizing:border-box}
+button{background:#101828;color:#fff;padding:12px 20px;border:none;border-radius:999px;font-weight:700;width:100%;cursor:pointer;margin-top:10px}
+button.green{background:#25D366}
+.item{display:flex;gap:10px;align-items:center;border-bottom:1px solid #eee;padding:10px 0}
+.item img{width:50px;height:50px;border-radius:10px;object-fit:cover}
+.live{color:#25D366;font-weight:700;text-align:center}
+</style>
+</head>
+<body>
+<h2 style="text-align:center">AZ COASTAL ADMIN</h2>
+<p class="live">● LIVE LINK: 671271038.github.io</p>
+<p style="text-align:center;font-size:12px"><a href="https://671271038.github.io/" target="_blank">View Live Homepage →</a></p>
+
+<div class="card">
+<h3>Add New Product</h3>
+<select id="category">
+<option value="dress">Dress</option>
+<option value="bouquet">Bouquet</option>
+<option value="perfume">Perfume</option>
+</select>
+<input id="name" placeholder="Name e.g. Taupe Plaid Dress">
+<input id="price" placeholder="Price e.g. R200 - R1000 or R250">
+<input id="size" placeholder="Size e.g. Medium (leave empty for perfume/bouquet)">
+<input id="image_url" placeholder="Image URL or upload below">
+<input type="file" id="fileInput" accept="image/*">
+<button onclick="addProduct()">Save - Will Appear LIVE on Homepage</button>
+<p id="status"></p>
+</div>
+
+<div class="card">
+<h3>Current Products (Live on 671271038.github.io)</h3>
+<div id="list">Loading...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_KEY = 'YOUR_ANON_KEY';
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function addProduct(){
+  const name = document.getElementById('name').value;
+  const price = document.getElementById('price').value;
+  const size = document.getElementById('size').value;
+  const cat = document.getElementById('category').value;
+  let image_url = document.getElementById('image_url').value;
+
+  // upload if file selected
+  const file = document.getElementById('fileInput').files[0];
+  if(file){
+    document.getElementById('status').innerText = 'Uploading image...';
+    const fileName = Date.now() + '_' + file.name;
+    let { data, error } = await client.storage.from('products').upload(fileName, file);
+    if(error){ alert(error.message); return; }
+    let { data: urlData } = client.storage.from('products').getPublicUrl(fileName);
+    image_url = urlData.publicUrl;
+  }
+
+  if(!name ||!image_url){ alert('Need name and image'); return; }
+
+  document.getElementById('status').innerText = 'Saving...';
+  let { error } = await client.from('products').insert([{name, price, size, image_url, category:cat}]);
+  if(error){ alert(error.message); } else {
+    document.getElementById('status').innerText = 'Saved! Check https://671271038.github.io/ - refresh homepage';
+    document.getElementById('name').value=''; document.getElementById('price').value=''; document.getElementById('image_url').value='';
+    loadProducts();
+  }
+}
+
+async function loadProducts(){
+  let { data } = await client.from('products').select('*').order('created_at',{ascending:false});
+  const list = document.getElementById('list');
+  if(!data ||!data.length){ list.innerHTML='No products yet'; return; }
+  list.innerHTML = data.map(p=>`
+    <div class="item">
+      <img src="${p.image_url}">
+      <div style="flex:1"><b>${p.name}</b><br><small>${p.category} - ${p.price}</small></div>
+      <button onclick="del('${p.id}')" style="width:auto;background:red;padding:6px 12px">X</button>
+    </div>
+  `).join('');
+}
+
+async function del(id){
+  if(!confirm('Delete? Will remove from live homepage')) return;
+  await client.from('products').delete().eq('id',id);
+  loadProducts();
+}
+
+loadProducts();
+</script>
+</body>
+</html>
