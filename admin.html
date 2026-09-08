@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AZ COASTAL ADMIN</title><script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body class="bg-gray-100 p-4">
+<div class="max-w-5xl mx-auto">
+<h1 class="text-2xl font-bold mb-2">AZ COASTAL ADMIN</h1><p class="text-sm text-gray-600 mb-6">Live DB: xfgfkqtryehdvxfihidg - Edit here, site updates instantly.</p>
+<div class="bg-white p-4 rounded shadow mb-8"><h2 class="font-bold mb-3">Add New Product</h2><div class="grid grid-cols-2 md:grid-cols-5 gap-2"><input id="newName" placeholder="Name" class="border p-2 text-sm"/><input id="newPrice" type="number" placeholder="Price R" class="border p-2 text-sm"/><select id="newCat" class="border p-2 text-sm"><option value="women">women</option><option value="bouquet">bouquet</option></select><input id="newBadge" placeholder="Badge" class="border p-2 text-sm"/><input id="newImage" placeholder="Image URL" class="border p-2 text-sm col-span-2"/></div><button onclick="addProduct()" class="mt-3 bg-black text-white px-6 py-2 text-sm">ADD PRODUCT</button></div>
+<div id="list" class="grid gap-3"></div>
+</div>
+<script>
+const SUPABASE_URL = 'https://xfgfkqtryehdvxfihidg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_DOmvNTyi_8n4h5igNaq1Jw_y0rpLLez';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+async function load(){ const { data } = await supabaseClient.from('products').select('*').order('price',{ascending:true}); document.getElementById('list').innerHTML = data.map(p=>`<div class="bg-white p-3 rounded shadow flex gap-3 items-center"><img src="${p.image_url}" class="w-20 h-24 object-cover"/><div class="flex-1 grid grid-cols-1 md:grid-cols-5 gap-2"><input value="${p.name}" id="name-${p.id}" class="border p-2 text-sm"/><input type="number" value="${p.price}" id="price-${p.id}" class="border p-2 text-sm"/><input value="${p.category}" id="cat-${p.id}" class="border p-2 text-sm"/><input value="${p.badge||''}" id="badge-${p.id}" class="border p-2 text-sm"/><input value="${p.image_url}" id="img-${p.id}" class="border p-2 text-sm text-xs"/></div><div class="flex flex-col gap-2"><button onclick="save('${p.id}')" class="bg-black text-white px-3 py-1 text-xs">SAVE</button><button onclick="del('${p.id}')" class="bg-red-600 text-white px-3 py-1 text-xs">DELETE</button></div></div>`).join(''); }
+async function save(id){ const updates = { name: document.getElementById(`name-${id}`).value, price: parseInt(document.getElementById(`price-${id}`).value), category: document.getElementById(`cat-${id}`).value, badge: document.getElementById(`badge-${id}`).value, image_url: document.getElementById(`img-${id}`).value }; const { error } = await supabaseClient.from('products').update(updates).eq('id', id); if(error) alert(error.message); else { alert('Saved! Website live updated.'); load(); } }
+async function del(id){ if(!confirm('Delete?')) return; await supabaseClient.from('products').delete().eq('id', id); load(); }
+async function addProduct(){ const prod = { name: document.getElementById('newName').value, price: parseInt(document.getElementById('newPrice').value), category: document.getElementById('newCat').value, badge: document.getElementById('newBadge').value, image_url: document.getElementById('newImage').value || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600' }; if(!prod.name || !prod.price){ alert('Need name and price'); return; } const { error } = await supabaseClient.from('products').insert(prod); if(error) alert(error.message); else { alert('Added!'); load(); } }
+load();
+</script></body></html>
